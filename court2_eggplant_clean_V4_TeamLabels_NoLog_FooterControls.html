@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>JoyScores — Court 2 • Eggplant • Clean</title>
+<style>
+  :root{
+    --bg:#1A1223; --panel:#241531; --panel-strong:#301D40;
+    --accent:#FF9CF9; --ink:#FFFFFF; --muted:#D6B3E6; --line:rgba(255,255,255,.12);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+
+  .container{ min-height:100vh; width:100%; display:flex; flex-direction:column; padding:16px; gap:14px; }
+
+  .header{ display:flex; align-items:center; justify-content:space-between; gap:12px;
+           background:var(--panel-strong); border:1px solid var(--line); border-radius:14px; padding:12px 16px; }
+  .brand{ display:flex; align-items:center; gap:12px; font-weight:900; letter-spacing:.3px }
+  .logo{ font-weight:900; letter-spacing:.6px }
+  .tag{ color:var(--accent); text-transform:uppercase; font-weight:900 }
+  .head-controls{ display:flex; align-items:center; gap:10px; flex-wrap:wrap }
+  .select, .btn{ background:#10292B; color:#E6FFF8; border:1px solid var(--line); padding:8px 12px; border-radius:10px; font-weight:700 }
+  .btn{ cursor:pointer } .btn:active{ transform:scale(.98) }
+  .last{ background:rgba(255,255,255,.06); border:1px solid var(--line); padding:6px 10px; border-radius:10px;
+         font-size:12px; color:var(--muted); white-space:nowrap; max-width:48ch; overflow:hidden; text-overflow:ellipsis; }
+
+  .main{ display:grid; gap:14px; grid-template-columns: 1fr; }
+  @media (min-width:1200px){ .main{ grid-template-columns: 1.4fr 1fr; } }
+
+  .scorecol{ display:grid; gap:14px; }
+  .row{ display:grid; grid-template-columns: 2.4fr 1.6fr 1fr; align-items:center;
+        background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px; }
+  .names{ display:flex; flex-direction:column; gap:6px; min-width:0 }
+  .player{ display:flex; align-items:center; gap:8px; min-width:0 }
+  .flag{ font-size:20px; width:1.4em; text-align:center }
+  .pname{ flex:1; min-width:0; background:transparent; border:none; color:var(--ink); outline:none;
+          font-weight:900; font-size: clamp(14px, 1.9vw, 24px); letter-spacing:.3px; text-transform:uppercase }
+  .sets{
+    --gap: 12px;
+    --sets-count: 3;
+    --set-size-max: clamp(72px, 9vh, 104px);
+    --set-size: min(var(--set-size-max), calc((100% - (var(--gap) * (var(--sets-count) - 1))) / var(--sets-count)));
+    display:grid; grid-auto-flow: column; grid-auto-columns: var(--set-size);
+    gap: var(--gap); justify-content:center; align-items:center; overflow-x:visible;
+  }
+  .set{
+    width: var(--set-size); height: var(--set-size);
+    display:flex; align-items:center; justify-content:center;
+    border-radius:12px; border:1px solid var(--line); background:transparent;
+    font-weight:900; font-size: clamp(36px, 5vh, 52px); line-height:1;
+  }
+  .set.active{ background:var(--panel-strong) }
+  .points{ text-align:right; font-weight:900; color:var(--accent); font-size: clamp(44px, 6.2vh, 72px); line-height:1 }
+  .points.small{ font-size: clamp(16px, 2.6vw, 28px); color:var(--muted) }
+
+  .dock{ display:grid; grid-template-columns:1fr 1fr; gap:14px }
+  .team{ display:grid; grid-template-columns:1.1fr auto; gap:12px; align-items:center; background:var(--panel);
+         border:1px solid var(--line); border-radius:14px; padding:12px }
+  .label{ font-weight:900; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .bigbtn{ font-size:28px; line-height:1; padding:12px 16px; min-width:120px; min-height:60px; border-radius:12px; border:none; cursor:pointer;
+           font-weight:900; background:var(--accent); color:#0C1116 }
+  .bigbtn:active{ transform:scale(.98) }
+
+  .toolcol{ display:grid; gap:14px }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px }
+  .card strong{ display:block; margin-bottom:8px }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px }
+  .input, .select2{ background:#102429; color:#E6FFF8; border:1px solid var(--line); padding:10px 12px; border-radius:10px; outline:none; width:100% }
+
+  .loglist{ max-height: 32vh; overflow:auto; background: rgba(255,255,255,.06); border:1px solid var(--line);
+            border-radius:10px; padding:10px; font-family: ui-monospace, Menlo, Consolas, "Courier New", monospace;
+            font-size: clamp(12px, 1.6vh, 14px); line-height:1.35 }
+  .logitem{ margin:4px 0; opacity:.96 }
+  .logitem .ts{ color: var(--muted); margin-right:6px }
+  .logtools{ display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; justify-content:flex-end }
+  .util{ background:#10292B; color:#E6FFF8; border:1px solid var(--line); padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:700 }
+.flag{margin-right:0.4em;font-size:1.8em;display:inline-block;vertical-align:middle;}
+
+  /* Bottom Game Log footer */
+  .footer{ display:block; }
+  .footer .card{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px; }
+  .footer .logwrap{ display:flex; flex-direction:column; gap:10px; }
+  .footer .loghead{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .footer .logtitle{ font-weight:900 }
+  .footer .logtools{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end }
+  /* Give the bottom log a bit more room on large screens */
+  .footer .loglist{ max-height: 28vh; }
+
+  /* Footer controls only (no log) */
+  .footer .card{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px; margin-top:14px }
+  .footer .logtools .util{ background:#10292B; color:#E6FFF8; border:1px solid var(--line); padding:10px 14px; border-radius:12px; font-weight:800; cursor:pointer }
+  .footer .logtools .util:active{ transform:scale(.98) }
+
+</style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="brand">
+        <div class="logo">JOY<strong>SCORES</strong></div>
+        <span class="tag">Court 2</span>
+      </div>
+      <div class="head-controls">
+        <label for="setCount">Sets:</label>
+        <select id="setCount" class="select">
+          <option value="3" selected>Best of 3</option>
+          <option value="5">Best of 5</option>
+        </select>
+        <div id="last" class="last">Last: —</div>
+      </div>
+    </header>
+
+    <div class="main">
+      <!-- Left: Scoreboard -->
+      <section class="scorecol">
+        <div class="row">
+          <div class="names">
+            <div class="player">
+              <span id="flag1a" class="flag">🇪🇸</span>
+              <input id="name1a" class="pname" type="text" value="PLAYER A" oninput="syncLabels()"/>
+            </div>
+            <div class="player">
+              <span id="flag1b" class="flag">🇲🇽</span>
+              <input id="name1b" class="pname" type="text" value="PLAYER B" oninput="syncLabels()"/>
+            </div>
+          </div>
+          <div id="sets1" class="sets"></div>
+          <div class="points" id="p1points">0</div>
+        </div>
+        <div class="row">
+          <div class="names">
+            <div class="player">
+              <span id="flag2a" class="flag">🇦🇷</span>
+              <input id="name2a" class="pname" type="text" value="PLAYER C" oninput="syncLabels()"/>
+            </div>
+            <div class="player">
+              <span id="flag2b" class="flag">🇺🇾</span>
+              <input id="name2b" class="pname" type="text" value="PLAYER D" oninput="syncLabels()"/>
+            </div>
+          </div>
+          <div id="sets2" class="sets"></div>
+          <div class="points" id="p2points">0</div>
+        </div>
+
+        <div class="dock">
+          <div class="team">
+            <div class="label" id="label1">Team 1</div>
+            <div>
+              <button class="bigbtn" onclick="point('p1',-1)">−</button>
+              <button class="bigbtn" onclick="point('p1',+1)">+</button>
+            </div>
+          </div>
+          <div class="team">
+            <div class="label" id="label2">Team 2</div>
+            <div>
+              <button class="bigbtn" onclick="point('p2',-1)">−</button>
+              <button class="bigbtn" onclick="point('p2',+1)">+</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: Tools -->
+      <aside class="toolcol">
+        <div class="card">
+          <strong>Countries</strong>
+          <div class="row2">
+            <div>
+              <label for="search1a">Team 1 — Player A</label>
+              <input id="search1a" class="input" type="search" placeholder="Search country or code…" oninput="filterCountries('1a',this.value)"/>
+              <select id="country1a" class="select2" onchange="setPlayerCountry('1a',this.value)"></select>
+            </div>
+            <div>
+              <label for="search1b">Team 1 — Player B</label>
+              <input id="search1b" class="input" type="search" placeholder="Search country or code…" oninput="filterCountries('1b',this.value)"/>
+              <select id="country1b" class="select2" onchange="setPlayerCountry('1b',this.value)"></select>
+            </div>
+          </div>
+          <div class="row2">
+            <div>
+              <label for="search2a">Team 2 — Player C</label>
+              <input id="search2a" class="input" type="search" placeholder="Search country or code…" oninput="filterCountries('2a',this.value)"/>
+              <select id="country2a" class="select2" onchange="setPlayerCountry('2a',this.value)"></select>
+            </div>
+            <div>
+              <label for="search2b">Team 2 — Player D</label>
+              <input id="search2b" class="input" type="search" placeholder="Search country or code…" oninput="filterCountries('2b',this.value)"/>
+              <select id="country2b" class="select2" onchange="setPlayerCountry('2b',this.value)"></select>
+            </div>
+          </div>
+        </div>
+
+        </aside>
+    
+    <!-- Bottom: Game Log (full width) -->
+    
+
+  </div>
+
+<script>
+'use strict';
+
+/* Emoji flag helper */
+function ccToEmoji(cc){
+  cc = (cc||'').toUpperCase();
+  return cc.replace(/./g, function(c){ return String.fromCodePoint(127397 + c.charCodeAt(0)); });
+}
+
+/* Full country list */
+const COUNTRIES = [["AF","Afghanistan"],["AL","Albania"],["DZ","Algeria"],["AD","Andorra"],["AO","Angola"],["AG","Antigua and Barbuda"],["AR","Argentina"],["AM","Armenia"],["AU","Australia"],["AT","Austria"],["AZ","Azerbaijan"],["BS","Bahamas"],["BH","Bahrain"],["BD","Bangladesh"],["BB","Barbados"],["BY","Belarus"],["BE","Belgium"],["BZ","Belize"],["BJ","Benin"],["BT","Bhutan"],["BO","Bolivia"],["BA","Bosnia and Herzegovina"],["BW","Botswana"],["BR","Brazil"],["BN","Brunei"],["BG","Bulgaria"],["BF","Burkina Faso"],["BI","Burundi"],["KH","Cambodia"],["CM","Cameroon"],["CA","Canada"],["CV","Cape Verde"],["CF","Central African Republic"],["TD","Chad"],["CL","Chile"],["CN","China"],["CO","Colombia"],["KM","Comoros"],["CG","Congo"],["CD","Congo (DRC)"],["CR","Costa Rica"],["CI","Côte d’Ivoire"],["HR","Croatia"],["CU","Cuba"],["CY","Cyprus"],["CZ","Czechia"],["DK","Denmark"],["DJ","Djibouti"],["DM","Dominica"],["DO","Dominican Republic"],["EC","Ecuador"],["EG","Egypt"],["SV","El Salvador"],["GQ","Equatorial Guinea"],["ER","Eritrea"],["EE","Estonia"],["SZ","Eswatini"],["ET","Ethiopia"],["FJ","Fiji"],["FI","Finland"],["FR","France"],["GA","Gabon"],["GM","Gambia"],["GE","Georgia"],["DE","Germany"],["GH","Ghana"],["GR","Greece"],["GD","Grenada"],["GT","Guatemala"],["GN","Guinea"],["GW","Guinea-Bissau"],["GY","Guyana"],["HT","Haiti"],["HN","Honduras"],["HU","Hungary"],["IS","Iceland"],["IN","India"],["ID","Indonesia"],["IR","Iran"],["IQ","Iraq"],["IE","Ireland"],["IL","Israel"],["IT","Italy"],["JM","Jamaica"],["JP","Japan"],["JO","Jordan"],["KZ","Kazakhstan"],["KE","Kenya"],["KI","Kiribati"],["KW","Kuwait"],["KG","Kyrgyzstan"],["LA","Laos"],["LV","Latvia"],["LB","Lebanon"],["LS","Lesotho"],["LR","Liberia"],["LY","Libya"],["LI","Liechtenstein"],["LT","Lithuania"],["LU","Luxembourg"],["MG","Madagascar"],["MW","Malawi"],["MY","Malaysia"],["MV","Maldives"],["ML","Mali"],["MT","Malta"],["MH","Marshall Islands"],["MR","Mauritania"],["MU","Mauritius"],["MX","Mexico"],["FM","Micronesia"],["MD","Moldova"],["MC","Monaco"],["MN","Mongolia"],["ME","Montenegro"],["MA","Morocco"],["MZ","Mozambique"],["MM","Myanmar"],["NA","Namibia"],["NR","Nauru"],["NP","Nepal"],["NL","Netherlands"],["NZ","New Zealand"],["NI","Nicaragua"],["NE","Niger"],["NG","Nigeria"],["MK","North Macedonia"],["NO","Norway"],["OM","Oman"],["PK","Pakistan"],["PW","Palau"],["PS","Palestine"],["PA","Panama"],["PG","Papua New Guinea"],["PY","Paraguay"],["PE","Peru"],["PH","Philippines"],["PL","Poland"],["PT","Portugal"],["QA","Qatar"],["RO","Romania"],["RU","Russia"],["RW","Rwanda"],["KN","Saint Kitts and Nevis"],["LC","Saint Lucia"],["VC","Saint Vincent and the Grenadines"],["WS","Samoa"],["SM","San Marino"],["ST","Sao Tome and Principe"],["SA","Saudi Arabia"],["SN","Senegal"],["RS","Serbia"],["SC","Seychelles"],["SL","Sierra Leone"],["SG","Singapore"],["SK","Slovakia"],["SI","Slovenia"],["SB","Solomon Islands"],["SO","Somalia"],["ZA","South Africa"],["KR","South Korea"],["SS","South Sudan"],["ES","Spain"],["LK","Sri Lanka"],["SD","Sudan"],["SR","Suriname"],["SE","Sweden"],["CH","Switzerland"],["SY","Syria"],["TW","Taiwan"],["TJ","Tajikistan"],["TZ","Tanzania"],["TH","Thailand"],["TL","Timor-Leste"],["TG","Togo"],["TO","Tonga"],["TT","Trinidad and Tobago"],["TN","Tunisia"],["TR","Türkiye"],["TM","Turkmenistan"],["TV","Tuvalu"],["UG","Uganda"],["UA","Ukraine"],["AE","United Arab Emirates"],["GB","United Kingdom"],["US","United States"],["UY","Uruguay"],["UZ","Uzbekistan"],["VU","Vanuatu"],["VA","Vatican City"],["VE","Venezuela"],["VN","Vietnam"],["YE","Yemen"],["ZM","Zambia"],["ZW","Zimbabwe"],["HK","Hong Kong"],["MO","Macao"],["PR","Puerto Rico"],["XK","Kosovo"],["GG","Guernsey"],["JE","Jersey"],["IM","Isle of Man"]];
+
+const WIN_G = 6, MARGIN = 2;
+var state = { maxSets:3, setIndex:0, sets:{p1:[0,0,0], p2:[0,0,0]}, points:{p1:0,p2:0}, tiebreak:false, tb:{p1:0,p2:0} };
+
+function pointLabel(v){ return ['0','15','30','40'][v] || 'Ad'; }
+function getTeamName(idx){
+  var a = document.getElementById('name'+idx+'a'), b = document.getElementById('name'+idx+'b');
+  var A = (a&&a.value)?a.value.trim():'PLAYER ' + (idx===1?'A':'C');
+  var B = (b&&b.value)?b.value.trim():'PLAYER ' + (idx===1?'B':'D');
+  return (A||'—') + ' / ' + (B||'—');
+}
+
+function buildSets(){
+  var s1 = document.getElementById('sets1'), s2 = document.getElementById('sets2');
+  s1.innerHTML=''; s2.innerHTML='';
+  ['p1','p2'].forEach(function(p){ state.sets[p].length = state.maxSets; for(var i=0;i<state.maxSets;i++){ if(state.sets[p][i]==null) state.sets[p][i]=0; } });
+  for(var i=0;i<state.maxSets;i++){
+    var a=document.createElement('div'); a.className='set'; a.id='p1s'+(i+1); a.textContent=state.sets.p1[i]; s1.appendChild(a);
+    var b=document.createElement('div'); b.className='set'; b.id='p2s'+(i+1); b.textContent=state.sets.p2[i]; s2.appendChild(b);
+  }
+  try {
+    if(s1) s1.style.setProperty('--sets-count', String(state.maxSets));
+    if(s2) s2.style.setProperty('--sets-count', String(state.maxSets));
+  } catch(e){}
+  updateUI();
+}
+function updateUI(){
+  for(var i=1;i<=state.maxSets;i++){
+    ['p1','p2'].forEach(function(p){ var el=document.getElementById(p+'s'+i); if(el) el.classList.toggle('active', i-1===state.setIndex); });
+  }
+  for(var i=0;i<state.maxSets;i++){
+    ['p1','p2'].forEach(function(p){ var el=document.getElementById(p+'s'+(i+1)); if(el) el.textContent=state.sets[p][i]; });
+  }
+  var p1=document.getElementById('p1points'), p2=document.getElementById('p2points');
+  if(state.tiebreak){ p1.textContent='TB '+state.tb.p1; p2.textContent='TB '+state.tb.p2; p1.classList.add('small'); p2.classList.add('small'); }
+  else { p1.textContent=pointLabel(state.points.p1); p2.textContent=pointLabel(state.points.p2); p1.classList.remove('small'); p2.classList.remove('small'); }
+  syncLabels();
+}
+function clearPoints(){ state.points.p1=0; state.points.p2=0; state.tiebreak=false; state.tb.p1=0; state.tb.p2=0; }
+function checkSetWin(){
+  var i=state.setIndex, g1=state.sets.p1[i], g2=state.sets.p2[i];
+  if((g1>=WIN_G || g2>=WIN_G)){
+    if(Math.abs(g1-g2)>=MARGIN || g1===7 || g2===7){
+      var n1=getTeamName(1), n2=getTeamName(2);
+      var winner = (g1>g2)? n1 : n2;
+      logEvent('set', 'Set ' + (i+1) + ' won by ' + winner + ' (' + g1 + '–' + g2 + ')');
+      if(state.setIndex<state.maxSets-1){ state.setIndex++; clearPoints(); }
+      else { clearPoints(); }
+    }
+  }
+  updateUI();
+}
+function awardGame(winner){
+  var wasTB = state.tiebreak;
+  var i = state.setIndex;
+  state.sets[winner][i]+=1;
+  clearPoints();
+  state.tiebreak=false;
+  var n1=getTeamName(1), n2=getTeamName(2);
+  var g1 = state.sets.p1[i], g2 = state.sets.p2[i];
+  var who = (winner==='p1')? n1 : n2;
+  logEvent('game', (wasTB?'(TB) ':'') + 'Game ' + who + ' — Set ' + (i+1) + ' score ' + g1 + '–' + g2);
+  checkSetWin();
+}
+function maybeTB(){
+  var i=state.setIndex;
+  if(state.sets.p1[i]===6 && state.sets.p2[i]===6) {
+    if(!state.tiebreak){ logEvent('tiebreak', 'Tiebreak started in Set ' + (i+1)); }
+    state.tiebreak=true;
+  }
+}
+
+function point(side,dir){
+  if(state.tiebreak){
+    state.tb[side] = Math.max(0, state.tb[side] + (dir>0?1:-1));
+    var a=state.tb.p1,b=state.tb.p2; if((a>=7||b>=7) && Math.abs(a-b)>=2) awardGame(a>b?'p1':'p2');
+    updateUI(); return;
+  }
+  var me = state.points[side]; var oppSide = side==='p1'?'p2':'p1'; var ov = state.points[oppSide];
+  if(dir>0){
+    if(me<=2) me++;
+    else if(me===3){
+      if(ov<3){ awardGame(side); return; }
+      else if(ov===3) me=4;
+      else if(ov===4){ state.points[oppSide]=3; me=3; }
+    } else if(me===4){ awardGame(side); return; }
+  } else {
+    if(me>0) me--;
+  }
+  state.points[side]=me; maybeTB(); updateUI();
+}
+function resetGame(){ clearPoints(); updateUI(); logEvent('reset', 'Game reset (Set ' + (state.setIndex+1) + ')'); }
+function newMatch(){ state.setIndex=0; state.sets={p1:Array(state.maxSets).fill(0), p2:Array(state.maxSets).fill(0)}; clearPoints(); buildSets(); updateUI(); logEvent('match', 'New match started — Best of ' + state.maxSets); }
+function changeMax(v){ state.maxSets=(parseInt(v,10)===5?5:3); newMatch(); logEvent('mode', 'Scoring changed to Best of ' + state.maxSets); }
+function swapSides(){
+  // swap names
+  ['a','b'].forEach(function(slot){
+    var n1=document.getElementById('name1'+slot), n2=document.getElementById('name2'+slot);
+    if(n1 && n2){ var t=n1.value; n1.value=n2.value; n2.value=t; }
+    var f1=document.getElementById('flag1'+slot), f2=document.getElementById('flag2'+slot);
+    if(f1 && f2){ var tf=f1.textContent; f1.textContent=f2.textContent; f2.textContent=tf; }
+  });
+  // swap scores
+  var tmpS=state.sets.p1; state.sets.p1=state.sets.p2; state.sets.p2=tmpS;
+  var tmpP=state.points.p1; state.points.p1=state.points.p2; state.points.p2=tmpP;
+  var tmpTB=state.tb.p1; state.tb.p1=state.tb.p2; state.tb.p2=tmpTB;
+  updateUI();
+  logEvent('swap', 'Sides swapped: ' + getTeamName(1) + ' ↔ ' + getTeamName(2));
+}
+
+function filterCountries(slot, query){
+  var select = document.getElementById('country'+slot);
+  var q=(query||'').trim().toLowerCase(); var current=select.value; select.innerHTML='';
+  COUNTRIES.filter(function(cn){ var c=cn[0], n=cn[1]; return !q || c.toLowerCase().includes(q) || n.toLowerCase().includes(q); })
+           .forEach(function(cn){ var c=cn[0], n=cn[1]; var o=document.createElement('option'); o.value=c; o.textContent = n.toUpperCase()+' ('+c+')'; select.appendChild(o); });
+  var opts = select.options; var hasCurrent=false; for(var i=0;i<opts.length;i++){ if(opts[i].value===current) {hasCurrent=true; break;} }
+  if(hasCurrent) select.value=current;
+  var chosen=select.value; if(chosen) setPlayerCountry(slot,chosen);
+}
+function setPlayerCountry(slot, cc){
+  var flagEl = document.getElementById('flag'+slot);
+  if(flagEl) flagEl.textContent = ccToEmoji(cc);
+  var nmEl = document.getElementById('name'+slot);
+  var nm = (nmEl && nmEl.value)? nmEl.value : ('PLAYER '+slot.toUpperCase());
+  logEvent('country', nm + ' flag set to ' + cc.toUpperCase());
+}
+function syncLabels(){
+  var L1=document.getElementById('label1'), L2=document.getElementById('label2');
+  if(L1) L1.textContent = 'Team 1';
+  if(L2) L2.textContent = 'Team 2';
+}
+
+/* Game Log */
+var LOG = [];
+const MATCH_EVENT_TYPES = new Set(['game','set','tiebreak','match','mode','reset','swap']); // whitelist for match-related messages
+function fmtTime(d){ return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}); }
+function logEvent(type, msg){
+  // Log only match-related events
+  if (!MATCH_EVENT_TYPES.has(type)) { return; }
+  var d = new Date();
+  var entry = {t: d.toISOString(), type: type, set: state.setIndex+1, msg: msg};
+  LOG.push(entry);
+  var box = document.getElementById('log');
+  if(box){
+    var div = document.createElement('div');
+    div.className = 'logitem';
+    div.innerHTML = '<span class="ts">['+fmtTime(d)+']</span> ' + msg;
+    if (box.firstChild) box.insertBefore(div, box.firstChild); else box.appendChild(div);
+  }
+  var last = document.getElementById('last'); if(last && (type==='game'||type==='set'||type==='tiebreak'||type==='match'||type==='reset'||type==='country')) last.textContent = 'Last: ' + msg;
+}
+function clearLog(){ LOG = []; var box=document.getElementById('log'); if(box) box.innerHTML=''; }
+function exportLog(){
+  var lines = LOG.map(function(e){return '['+e.t+'] (Set '+e.set+') '+e.msg;}).reverse().join("\\n");
+  var blob = new Blob([lines||'JoyScores Log (empty)'], {type:'text/plain'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href=url; a.download='joyscores_log.txt';
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 0);
+}
+
+/* init */
+(function init(){
+  document.getElementById('setCount').addEventListener('change', function(e){ changeMax(e.target.value); });
+  // populate countries (four selectors: 1a,1b,2a,2b)
+  ['1a','1b','2a','2b'].forEach(function(slot){
+    var sel=document.getElementById('country'+slot);
+    for(var i=0;i<COUNTRIES.length;i++){
+      var c=COUNTRIES[i][0], n=COUNTRIES[i][1];
+      var o=document.createElement('option'); o.value=c; o.textContent=n.toUpperCase()+' ('+c+')';
+      sel.appendChild(o);
+    }
+  });
+  document.getElementById('country1a').value='ES';
+  document.getElementById('country1b').value='MX';
+  document.getElementById('country2a').value='AR';
+  document.getElementById('country2b').value='UY';
+  setPlayerCountry('1a','ES'); setPlayerCountry('1b','MX');
+  setPlayerCountry('2a','AR'); setPlayerCountry('2b','UY');
+
+  buildSets(); newMatch();
+})();
+</script>
+
+
+    <!-- Bottom: Match Controls (No Log) -->
+    <section class="footer">
+      <div class="card">
+        <div class="logtools" style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+          <button class="util" onclick="resetGame()">Reset Game</button>
+          <button class="util" onclick="newMatch()">New Match</button>
+          <button class="util" onclick="swapSides()">Swap Sides</button>
+        </div>
+      </div>
+    </section>
+
+</body>
+</html>
